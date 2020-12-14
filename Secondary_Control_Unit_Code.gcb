@@ -1,0 +1,141 @@
+
+; ----- Configuration
+  #chip 16F887,20
+
+; ----- Define Hardware settings
+  dir AN0 in
+  dir AN1 in
+  dir AN2 in
+  dir AN3 in
+  dir AN4 in
+  dir AN5 in
+  dir AN6 in
+  dir PORTB.7 in
+  dir PORTD.2 out
+  dir PORTD.3 out
+  dir PORTC.4 out
+  dir PORTC.2 out
+  dir PORTC.7 out
+  dir PORTD.5 out
+  dir PORTD.1 out
+
+  #define MOS1_CTEMP AN0
+  #define MOS2_CTEMP AN1
+  #define MOS3_CTEMP AN2
+  #define MOS4_CTEMP AN3
+  #define AMBIENT AN4
+  #define BATTERY AN5
+  #define LOAD AN6
+  #define NEPA PORTB.7
+  #define HIGH_TEMP PORTD.2
+  #define BATTERY_LOW PORTD.3
+  #define OVERLOAD PORTC.4
+  #define FAN PORTC.7
+  #define SHUTDOWN PORTD.5
+  #define RELAY PORTD.1
+  #define PWM_Freq 7     'Set frequency in KHz
+  #define PWM_Duty 99    'Set duty cycle to 90 %
+
+  Dim MOS1_JTEMP as Integer
+  Dim MOS2_JTEMP as Integer
+  Dim MOS3_JTEMP as Integer
+  Dim MOS4_JTEMP as Integer
+  Dim CURRENT_VOLTS as integer
+  Dim CURRENT1 as word
+  Dim CURRENT2 as word
+  Dim CURRENT3 as word
+  Dim CURRENT4 as integer
+  Dim CURRENT5 as integer
+  Dim CURRENT6 as word
+  Dim CURRENT7 as long
+  Dim CURRENT8 as word
+  Dim TEMP1 as integer
+  Dim MOS1 as integer
+  Dim TEMP2 as integer
+  Dim MOS2 as integer
+  Dim TEMP3 as integer
+  Dim MOS3 as integer
+  Dim TEMP4 as integer
+  Dim MOS4 as integer
+
+; ----- Main body of program commences here.
+  Start:
+
+  Wait 2 s
+
+  do forever
+
+    MOS1 = (ReadAD10(MOS1_CTEMP)-ReadAD10(AMBIENT)) ;
+    TEMP1 = MOS1*6;
+    MOS1 = ((ReadAD10(MOS1_CTEMP)-ReadAD10(AMBIENT))*16)/100;
+    TEMP1 = (TEMP1 + MOS1)/100;
+
+    MOS2 = (ReadAD10(MOS2_CTEMP)-ReadAD10(AMBIENT)) ;
+    TEMP2 = MOS2*6;
+    MOS2 = ((ReadAD10(MOS2_CTEMP)-ReadAD10(AMBIENT))*16)/100;
+    TEMP2 = (TEMP2 + MOS2)/100;
+
+    MOS3 = (ReadAD10(MOS3_CTEMP)-ReadAD10(AMBIENT)) ;
+    TEMP3 = MOS3*6;
+    MOS3 = ((ReadAD10(MOS3_CTEMP)-ReadAD10(AMBIENT))*16)/100;
+    TEMP3 = (TEMP3 + MOS3)/100;
+
+    MOS4 = (ReadAD10(MOS4_CTEMP)-ReadAD10(AMBIENT)) ;
+    TEMP4 = MOS4*6;
+    MOS4 = ((ReadAD10(MOS4_CTEMP)-ReadAD10(AMBIENT))*16)/100;
+    TEMP4 = (TEMP4 + MOS4)/100;
+
+    CURRENT1 = ReadAD10(LOAD);
+    CURRENT2 = CURRENT1*48;
+    CURRENT3 = (ReadAD10(LOAD)*876)/1000;
+    CURRENT4 =((CURRENT2 + CURRENT3)/10)-2500;
+    CURRENT5 = Abs(CURRENT4);
+
+    CURRENT6 = CURRENT5*15;
+    CURRENT7 = (CURRENT5*152)/1000;
+    CURRENT8 = CURRENT6 + CURRENT7
+
+    MOS1_JTEMP = ReadAD10(MOS1_CTEMP)+TEMP1;
+    MOS2_JTEMP = ReadAD10(MOS2_CTEMP)+TEMP2;
+    MOS3_JTEMP = ReadAD10(MOS3_CTEMP)+TEMP3;
+    MOS4_JTEMP = ReadAD10(MOS4_CTEMP)+TEMP4;
+
+     if  MOS1_JTEMP > 50 |  MOS2_JTEMP > 50 |  MOS3_JTEMP > 50 |  MOS4_JTEMP > 50 Then
+     set FAN ON
+     end if
+
+     if  MOS1_JTEMP > 150 |  MOS2_JTEMP > 150 |  MOS3_JTEMP > 150 |  MOS4_JTEMP > 150 Then
+      do Forever
+      set SHUTDOWN ON
+      set HIGH_TEMP ON
+      loop
+     end if
+
+     if NEPA = ON  Then
+     Wait 5 s
+     set SHUTDOWN ON
+     Wait 50 ms
+     set RELAY ON
+     PWMOn
+     end if
+
+     if NEPA = OFF  Then
+     Wait 5 s
+     PWMOff
+     set RELAY OFF
+     Wait 50 ms
+     set SHUTDOWN OFF
+     end if
+
+     if CURRENT8 > 26700 Then
+      do Forever
+      set SHUTDOWN ON
+      set OVERLOAD ON
+      loop
+     end if
+
+  loop
+
+
+
+  end
